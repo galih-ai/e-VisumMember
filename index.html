@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>e-Visum MGBK</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web@2.1.1/dist/phosphor.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+        }
+
+        /* Container Dokumen F4 */
+        .visum-page {
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            background-color: white;
+            width: 215mm; 
+            min-height: 330mm;
+            padding: 1.5cm 2cm; 
+            margin: 0 auto 40px auto;
+            position: relative;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            transform-origin: top center;
+        }
+
+        .kop-container {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .kop-line {
+            border-bottom: 3px solid black;
+            border-top: 1px solid black;
+            height: 4px;
+            margin-top: 8px;
+        }
+
+        .stamp-overlay {
+            position: absolute;
+            width: 170px; 
+            height: 170px; 
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            opacity: 0.85; 
+            mix-blend-mode: multiply; 
+            right: 60%; 
+            bottom: 1px; 
+            transform: rotate(-5deg);
+            z-index: 10; 
+            pointer-events: none;
+        }
+
+        .signature-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            position: relative;
+            padding: 0 0.5rem;
+            margin-top: auto;
+        }
+
+        .signature-gap {
+            height: 70px;
+        }
+
+        .job-title-container {
+            min-height: 45px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .list-label {
+            width: 192px; 
+            flex-shrink: 0;
+            font-weight: 500;
+        }
+
+        /* Format Hasil Kunjungan Justify */
+        #prevHasilKunjungan {
+            text-align: justify;
+            text-justify: inter-word;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        /* TATA LETAK FOTO DINAMIS - DIPERBAHARUI */
+        .foto-single { 
+            width: 100%; 
+            max-height: 550px; 
+            object-fit: contain; 
+        }
+        
+        .foto-double { 
+            width: 100%; 
+            max-height: 550px; 
+            object-fit: contain; 
+        }
+
+        .foto-grid-item { 
+            width: 48%; 
+            aspect-ratio: 4/3; 
+            object-fit: cover; 
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        @media print {
+            body { background: none; padding: 0; margin: 0; }
+            .no-print { display: none !important; }
+            .visum-page {
+                box-shadow: none;
+                margin: 0;
+                width: 100%;
+                min-height: 330mm;
+                page-break-after: always;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ========== LANDING PAGE ========== -->
+<div id="landingPage" class="w-screen h-screen flex">
+
+    <!-- KIRI -->
+    <div class="w-1/2 bg-black flex items-center justify-center">
+        <h1 class="text-white text-6xl font-bold">Gr.</h1>
+    </div>
+
+    <!-- KANAN -->
+    <div class="w-1/2 bg-white flex items-center justify-center">
+        <div class="w-full max-w-sm">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">
+                Selamat datang Bapak dan Ibu Guru BK SMP Kota Balikpapan
+            </h2>
+            <h2 class="text-lg text-gray-800 mb-6">
+                Silahkan login untuk mengelola e-Visum MGBK SMP. Selamat bekerja.
+            </h2>
+
+            <div class="space-y-4">
+                <input
+                    id="username"
+                    type="text"
+                    placeholder="Username"
+                    class="w-full border rounded-lg p-3"
+                />
+
+                <input
+                    id="password"
+                    type="password"
+                    placeholder="Password"
+                    class="w-full border rounded-lg p-3"
+                />
+
+                <button
+                    onclick="login()"
+                    class="w-full bg-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800"
+                >
+                    Masuk Aplikasi
+                </button>
+<div className="mt-8 pt-6 border-t border-slate-100 text-center text-[9px] text-slate-400">
+  <span>&copy; 2026</span>
+  <span className="ml-2">Developed by Galih MGBK SMP</span>
+</div>
+                <p id="loginError" class="text-red-600 text-sm hidden">
+                    Username atau password salah
+                </p>
+            </div>
+        </div>
+    </div>
+
+</div>
+<!-- ========== END LANDING PAGE ========== -->
+
+    <div id="appContainer" class="hidden p-4 md:p-6 max-w-[1200px] mx-auto">
+        <!-- Header -->
+        <header class="no-print mb-8 text-center">
+            <h1 class="text-3xl font-black text-indigo-800 flex items-center justify-center gap-3">
+                <i class="ph-fill ph-note-pencil"></i> e-Visum MGBK
+            </h1>
+            <p class="text-slate-500 text-sm mt-1">Sistem Pelaporan Hasil Kunjungan MGBK SMP Balikpapan</p>
+        </header>
+    
+        <!-- Panel Kontrol -->
+        <div class="no-print bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-10">
+            <div class="flex items-center justify-between mb-6 border-b pb-4">
+                <h2 class="font-bold text-slate-800 flex items-center gap-2">
+                    <i class="ph ph-sliders text-indigo-600"></i> Form Pengisian
+                </h2>
+<div class="flex gap-2">
+    <!-- Tombol Unduh PDF -->
+    <button onclick="window.saveAsPdf()"
+        class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all">
+        <i class="ph-bold ph-download-simple"></i> UNDUH PDF
+    </button>
+
+    <!-- Tombol Logout -->
+    <button onclick="logout()"
+        class="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all">
+        <i class="ph-bold ph-sign-out"></i> LOGOUT
+    </button>
+</div>
+            </div>
+
+            <form id="visum-form">
+                <div class="form-grid">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Upload Kop Surat (Spesifikasi gambar ukuran 2000 x 400 pixel, ukuran file 356.7 KB, 71 dpi, 24 bit)</label>
+                            <input type="file" id="kopSuratFile" accept="image/*" onchange="previewKop(this)" class="block w-full text-xs border border-slate-200 p-2 rounded-lg bg-slate-50">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Tanggal & Waktu</label>
+                            <div class="flex gap-2">
+                                <input type="date" id="tanggalKunjungan" class="w-full p-2 border border-slate-200 rounded-lg text-sm">
+                                <input type="time" id="waktuKunjungan" class="w-full p-2 border border-slate-200 rounded-lg text-sm">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Hasil Kunjungan</label>
+                            <textarea id="hasilKunjungan" rows="6" placeholder="Tuliskan secara detail hasil kunjungan di sini..." class="w-full p-2 border border-slate-200 rounded-lg text-sm"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="p-4 border border-indigo-100 bg-indigo-50/50 rounded-xl">
+                            <div class="flex items-center justify-between mb-3">
+                                <label class="block text-xs font-bold text-indigo-700 uppercase">Petugas Pengunjung</label>
+                                <button type="button" id="addPetugas" class="bg-indigo-600 text-white text-[10px] px-3 py-1 rounded-md hover:bg-indigo-700 flex items-center gap-1 font-bold">
+                                    <i class="ph ph-plus"></i> TAMBAH
+                                </button>
+                            </div>
+                            <div id="petugasList" class="space-y-2 max-h-[160px] overflow-y-auto pr-1"></div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Penandatangan MGBK (Kanan)</label>
+                            <select id="penerimaKunjungan" class="w-full p-2 border border-slate-200 rounded-lg text-sm bg-white"></select>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="p-4 border border-slate-100 bg-slate-50 rounded-xl">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-3">Kepala Sekolah (Kiri)</label>
+                            <input type="text" id="namaKepalaSekolah" placeholder="Nama Lengkap & Gelar" class="w-full p-2 mb-2 border border-slate-200 rounded-lg text-sm">
+                            <input type="text" id="nipKepalaSekolah" placeholder="NIP" class="w-full p-2 mb-2 border border-slate-200 rounded-lg text-sm">
+                            <input type="text" id="asalSekolah" placeholder="Instansi / Sekolah" class="w-full p-2 border border-slate-200 rounded-lg text-sm">
+                        </div>
+                        <div class="flex flex-col gap-3">
+                            <label class="flex items-center gap-3 text-xs font-bold text-slate-600 cursor-pointer bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                <input type="checkbox" id="enableDokumentasi" class="w-4 h-4 rounded text-indigo-600"> 
+                                <span>LAMPIRKAN FOTO KEHADIRAN (Opsional) Disarankan hanya mengunggah 1 foto saja</span>
+                            </label>
+                            <div id="dokumentasiUpload" class="hidden">
+                                <input type="file" id="fotoDokumentasi" accept="image/*" multiple class="text-[10px] w-full border border-slate-200 p-2 rounded-lg bg-white">
+                                <p class="text-[9px] text-slate-400 mt-1">*Maksimal 4 foto</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button type="button" id="applyStampButton" class="flex-grow bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg text-xs font-bold shadow-sm flex items-center justify-center gap-2 transition-colors">
+                                    <i class="ph ph-seal-check"></i> BUBUHKAN STEMPEL
+                                </button>
+                                <button type="button" id="removeStampButton" class="hidden flex-grow bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg text-xs font-bold shadow-sm flex items-center justify-center gap-2 transition-colors">
+                                    <i class="ph ph-trash"></i> HAPUS
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    
+        <!-- Pratinjau Dokumen -->
+        <div class="overflow-x-auto pb-10">
+            <!-- HALAMAN 1 -->
+            <div id="visumPreview" class="visum-page">
+                <div class="kop-container">
+                    <div id="kopPlaceholder" class="h-24 flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg text-gray-400 italic text-sm">Kop Surat Belum Diunggah</div>
+                    <img id="doc-kop-surat" class="mx-auto max-h-28 hidden">
+                    <div class="kop-line"></div>
+                </div>
+
+                <div class="text-center mb-6">
+                    <h2 class="text-xl font-bold decoration-2 underline-offset-4">LAPORAN HASIL KUNJUNGAN</h2>
+                </div>
+
+                <div class="text-[14px] space-y-2 mb-2 px-4">
+                    <div class="flex"><div class="list-label">1. Dasar Pengunjung</div><div class="flex-grow font-semibold">: Mengikuti Pertemuan MGBK SMP</div></div>
+                    <div class="flex"><div class="list-label">2. Hari dan Tanggal</div><div class="flex-grow">: <span id="prevTanggal" class="font-semibold">...</span></div></div>
+                    <div class="flex"><div class="list-label">3. Waktu</div><div class="flex-grow">: <span id="prevWaktu" class="font-semibold">...</span></div></div>
+                    <div class="flex"><div class="list-label">4. Petugas Pengunjung</div><div class="flex-grow">: </div></div>
+                </div>
+
+                <div class="mb-4 px-4 ml-6">
+                    <table class="w-full border-collapse border border-black text-[13px]">
+                        <thead class="bg-gray-50 text-center font-bold">
+                            <tr>
+                                <td class="border border-black p-2 w-10">No</td>
+                                <td class="border border-black p-2">Nama</td>
+                                <td class="border border-black p-2">Jabatan</td>
+                                <td class="border border-black p-2 w-28">Paraf</td>
+                            </tr>
+                        </thead>
+                        <tbody id="petugasTableBody"></tbody>
+                    </table>
+                </div>
+
+                <div class="text-[14px] space-y-2 mb-2 px-4">
+                    <div class="flex"><div class="list-label">5. Penerima Kunjungan</div><div class="flex-grow">: </div></div>
+                </div>
+
+                <div class="mb-4 px-4 ml-6">
+                    <table class="w-full border-collapse border border-black text-[13px]">
+                        <thead class="bg-gray-50 text-center font-bold">
+                            <tr>
+                                <td class="border border-black p-2 w-10">No</td>
+                                <td class="border border-black p-2">Nama</td>
+                                <td class="border border-black p-2">Jabatan / Instansi</td>
+                                <td class="border border-black p-2 w-28">Paraf</td>
+                            </tr>
+                        </thead>
+                        <tbody id="penerimaTableBody"></tbody>
+                    </table>
+                </div>
+
+                <div class="text-[14px] space-y-2 mb-2 px-4">
+                    <div class="flex"><div class="list-label">6. Hasil Kunjungan</div><div class="flex-grow">: </div></div>
+                </div>
+                <div class="mb-8 px-4 ml-6">
+                    <div id="prevHasilKunjungan" class="text-[13px] leading-relaxed italic border border-gray-100 p-4 min-h-[80px] bg-gray-50/50 rounded-sm">...</div>
+                </div>
+
+                <div class="signature-section pb-10">
+                    <div class="w-[40%] text-[14px]">
+                        <p>Mengetahui,</p>
+                        <div class="job-title-container">
+                            <p class="font-bold">Kepala <span id="prevAsalSekolah">...</span></p>
+                        </div>
+                        <div class="signature-gap"></div>
+                        <p class="font-bold" id="prevNamaKepsek">...</p>
+                        <p>NIP. <span id="prevNIPKepsek">...</span></p>
+                    </div>
+                    <div class="w-[45%] text-[14px] relative pl-20">
+                        <div id="stampOverlay1" class="stamp-overlay hidden"></div>
+                        <p>Balikpapan, <span id="prevTglKota">...</span></p>
+                        <div id="prevJabatanMGBK" class="job-title-container"></div>
+                        <div class="signature-gap"></div>
+                        <p class="font-bold" id="prevNamaMGBK">...</p>
+                        <p>NIP. <span id="prevNIPMGBK">...</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HALAMAN 2 (DOKUMENTASI) -->
+            <div id="dokumentasiPreview" class="visum-page hidden">
+                <div class="kop-container">
+                    <img id="doc-kop-surat-2" class="mx-auto max-h-28">
+                    <div class="kop-line"></div>
+                </div>
+                <div class="text-center mb-4">
+                    <h2 class="text-xl font-bold decoration-2 underline-offset-4">LAMPIRAN DOKUMENTASI</h2>
+                </div>
+                <p class="text-center text-sm mb-4">Hari / Tanggal: <span id="prevTanggalDokumentasi" class="font-semibold">...</span></p>
+                
+                <!-- Area Foto -->
+                <div id="fotoGrid" class="flex flex-wrap justify-center items-center gap-4 mb-4">
+                    <!-- Foto akan dirender secara dinamis di sini -->
+                </div>
+
+                <!-- Bagian Pengesahan Halaman 2 -->
+                <div id="pengesahanDokumentasi" class="signature-section pb-10">
+                    <!-- Tanda tangan disalin dari halaman 1 melalui JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwzQM8TFKQPa5QR0cz4gKRPzsMrYuy4VC-arJE62D5nbYowoLjx8kay1uDCB1_JXlbv/exec";
+
+async function login() {
+    const user = document.getElementById('username').value;
+    const pass = document.getElementById('password').value;
+    const error = document.getElementById('loginError');
+    const loginBtn = document.querySelector('button[onclick="login()"]');
+
+    loginBtn.innerText = "Mengecek...";
+    loginBtn.disabled = true;
+
+    try {
+        const response = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({ username: user, password: pass }),
+            redirect: 'follow'
+        });
+
+        const data = await response.json();
+
+        if (data.result === 'success') {
+document.getElementById('landingPage').classList.add('hidden');
+    // Pastikan ID ini sama dengan ID pembungkus aplikasi Anda (appContainer atau appPage)
+    document.getElementById('appContainer').classList.remove('hidden'); 
+    error.classList.add('hidden');
+        } else {
+            error.innerText = "Username atau password salah";
+            error.classList.remove('hidden');
+        }
+    } catch (err) {
+        error.innerText = "Terjadi kesalahan koneksi";
+        error.classList.remove('hidden');
+    } finally {
+        loginBtn.innerText = "Masuk Aplikasi";
+        loginBtn.disabled = false;
+    }
+}
+
+function logout() {
+    // 1. Sembunyikan halaman aplikasi
+    document.getElementById('appContainer').classList.add('hidden');
+    
+    // 2. Munculkan kembali halaman login
+    document.getElementById('landingPage').classList.remove('hidden');
+
+    // 3. Kosongkan input username dan password agar aman
+    document.getElementById('username').value = '';
+    document.getElementById('password').value = '';
+    
+    // 4. Sembunyikan pesan error jika sebelumnya ada
+    const error = document.getElementById('loginError');
+    if (error) error.classList.add('hidden');
+    
+    // Opsional: Scroll ke atas agar tampilan login bersih
+    window.scrollTo(0, 0);
+}
+</script>
+
+    <script type="module">
+        const OFFICIALS = [
+            { id: 1, name: 'Gr. GALIH ATMAJI', position: 'Ketua MGBK SMP', nip: '199305242019031009', school: 'SMPN 15 Balikpapan' },
+        ];
+
+        window.petugasPengunjung = [];
+        window.fotoDokumentasiBase64 = [];
+
+        window.updatePreview = () => {
+            const tgl = document.getElementById('tanggalKunjungan').value;
+            const wkt = document.getElementById('waktuKunjungan').value;
+            const hasil = document.getElementById('hasilKunjungan').value;
+            const pId = document.getElementById('penerimaKunjungan').value;
+            const official = OFFICIALS.find(o => o.id == pId);
+
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const dStr = tgl ? new Date(tgl).toLocaleDateString('id-ID', options) : '...';
+            const shortDStr = tgl ? new Date(tgl).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : '...';
+
+            document.getElementById('prevTanggal').textContent = dStr;
+            document.getElementById('prevWaktu').textContent = wkt ? `${wkt} WITA s.d. Selesai` : '...';
+            document.getElementById('prevHasilKunjungan').textContent = hasil || '...';
+            document.getElementById('prevAsalSekolah').textContent = document.getElementById('asalSekolah').value || '...';
+            document.getElementById('prevNamaKepsek').textContent = document.getElementById('namaKepalaSekolah').value || '...';
+            document.getElementById('prevNIPKepsek').textContent = document.getElementById('nipKepalaSekolah').value || '...';
+            document.getElementById('prevTglKota').textContent = shortDStr;
+
+            if (official) {
+                document.getElementById('prevNamaMGBK').textContent = official.name;
+                document.getElementById('prevNIPMGBK').textContent = official.nip;
+                const jabatanEl = document.getElementById('prevJabatanMGBK');
+                
+                if (official.id === 1) {
+                    jabatanEl.innerHTML = `<p class="font-bold leading-tight">${official.position}</p>`;
+                } else {
+                    jabatanEl.innerHTML = `
+                        <p class="font-bold leading-tight">a.n. Ketua MGBK SMP</p>
+                        <p class="font-bold leading-tight">${official.position}</p>
+                    `;
+                }
+            }
+
+            // Update Tabel Petugas
+            const ptb = document.getElementById('petugasTableBody');
+            ptb.innerHTML = window.petugasPengunjung.length ? window.petugasPengunjung.map((p, i) => `
+                <tr>
+                    <td class="border border-black p-2 text-center font-semibold">${i + 1}</td>
+                    <td class="border border-black p-2">${p.name || ''}</td>
+                    <td class="border border-black p-2 text-center text-[11px]">${p.position || ''}</td>
+                    <td class="border border-black p-2 text-slate-300 text-[10px] text-center">${i + 1}. ...............</td>
+                </tr>
+            `).join('') : '<tr><td colspan="4" class="p-6 text-center text-slate-400 italic bg-slate-50">Belum ada petugas ditambahkan</td></tr>';
+
+            const prtb = document.getElementById('penerimaTableBody');
+            if (official) {
+                prtb.innerHTML = `<tr>
+                    <td class="border border-black p-2 text-center font-semibold">1</td>
+                    <td class="border border-black p-2 font-medium">${official.name}</td>
+                    <td class="border border-black p-2 text-center font-medium">${official.position} / ${official.school}</td>
+                    <td class="border border-black p-2 text-slate-300 text-[10px] text-center">1. ...............</td>
+                </tr>`;
+            }
+
+            // Update Halaman Dokumentasi & Foto
+            if (document.getElementById('enableDokumentasi').checked) {
+                document.getElementById('prevTanggalDokumentasi').textContent = dStr;
+                const fg = document.getElementById('fotoGrid');
+                fg.innerHTML = '';
+                
+                const count = window.fotoDokumentasiBase64.length;
+
+                window.fotoDokumentasiBase64.forEach((src) => {
+                    const img = document.createElement('img');
+                    img.src = src;
+                    
+                    if (count === 1) {
+                        img.className = "foto-single";
+                    } else if (count === 2) {
+                        // Jika 2 foto, susun vertikal dengan batasan tinggi agar tidak overflow
+                        img.className = "foto-double mb-2"; 
+                    } else {
+                        // Jika 3 atau 4 foto, gunakan grid
+                        img.className = "foto-grid-item";
+                    }
+                    fg.appendChild(img);
+                });
+
+                // Sinkronisasi tanda tangan ke halaman 2
+                const sourceSig = document.querySelector('#visumPreview .signature-section');
+                const targetSig = document.getElementById('pengesahanDokumentasi');
+                targetSig.innerHTML = sourceSig.innerHTML;
+                
+                // Sinkronisasi Stempel jika ada
+                const s1 = document.getElementById('stampOverlay1');
+                const s2 = targetSig.querySelector('.stamp-overlay');
+                if (s2 && !s1.classList.contains('hidden')) {
+                    s2.style.backgroundImage = s1.style.backgroundImage;
+                    s2.classList.remove('hidden');
+                }
+            }
+        };
+
+        window.previewKop = (input) => {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const base64 = e.target.result;
+                    document.getElementById('kopPlaceholder').classList.add('hidden');
+                    document.getElementById('doc-kop-surat').src = base64;
+                    document.getElementById('doc-kop-surat').classList.remove('hidden');
+                    document.getElementById('doc-kop-surat-2').src = base64;
+                    document.getElementById('doc-kop-surat-2').classList.remove('hidden');
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        };
+
+        window.saveAsPdf = async () => {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', [215, 330]);
+            const canvas1 = await html2canvas(document.getElementById('visumPreview'), { scale: 2, useCORS: true });
+            pdf.addImage(canvas1.toDataURL('image/png'), 'PNG', 0, 0, 215, 330);
+            
+            if (document.getElementById('enableDokumentasi').checked) {
+                pdf.addPage([215, 330]);
+                const canvas2 = await html2canvas(document.getElementById('dokumentasiPreview'), { scale: 2, useCORS: true });
+                pdf.addImage(canvas2.toDataURL('image/png'), 'PNG', 0, 0, 215, 330);
+            }
+            pdf.save(`e-Visum_MGBK_Cetak_A4.pdf`);
+        };
+
+        window.renderPetugasInput = () => {
+            const container = document.getElementById('petugasList');
+            container.innerHTML = window.petugasPengunjung.map((p, i) => `
+                <div class="flex flex-col gap-1 p-2 bg-white rounded-lg border border-indigo-200 shadow-sm">
+                    <div class="flex gap-2">
+                        <input type="text" placeholder="Nama Petugas" value="${p.name}" oninput="window.petugasPengunjung[${i}].name=this.value; window.updatePreview()" class="w-full text-[11px] p-1.5 border rounded">
+                        <button type="button" onclick="window.petugasPengunjung.splice(${i},1); window.renderPetugasInput(); window.updatePreview();" class="text-slate-400 hover:text-red-500"><i class="ph ph-trash"></i></button>
+                    </div>
+                    <input type="text" placeholder="Jabatan" value="${p.position}" oninput="window.petugasPengunjung[${i}].position=this.value; window.updatePreview()" class="w-full text-[11px] p-1.5 border rounded">
+                </div>
+            `).join('');
+            if(!window.petugasPengunjung.length) container.innerHTML = '<p class="text-[10px] text-center text-indigo-400 italic py-2">Klik Tambah Petugas</p>';
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const sel = document.getElementById('penerimaKunjungan');
+            OFFICIALS.forEach(o => {
+                const opt = document.createElement('option');
+                opt.value = o.id;
+                opt.textContent = `${o.name} (${o.position})`;
+                sel.appendChild(opt);
+            });
+
+            document.getElementById('addPetugas').onclick = () => {
+                window.petugasPengunjung.push({ name: '', position: '' });
+                window.renderPetugasInput();
+            };
+
+            document.getElementById('enableDokumentasi').onchange = (e) => {
+                document.getElementById('dokumentasiUpload').classList.toggle('hidden', !e.target.checked);
+                document.getElementById('dokumentasiPreview').classList.toggle('hidden', !e.target.checked);
+                window.updatePreview();
+            };
+
+            document.getElementById('fotoDokumentasi').onchange = (e) => {
+                const files = Array.from(e.target.files).slice(0, 4);
+                window.fotoDokumentasiBase64 = [];
+                let loaded = 0;
+                if (files.length === 0) {
+                    window.updatePreview();
+                    return;
+                }
+                files.forEach(f => {
+                    const reader = new FileReader();
+                    reader.onload = ev => {
+                        window.fotoDokumentasiBase64.push(ev.target.result);
+                        loaded++;
+                        if (loaded === files.length) window.updatePreview();
+                    };
+                    reader.readAsDataURL(f);
+                });
+            };
+
+            document.getElementById('applyStampButton').onclick = () => {
+                const stamp = 'https://i.postimg.cc/8jrTp8CG/STEMPEL-MGBK.png';
+                const s1 = document.getElementById('stampOverlay1');
+                s1.style.backgroundImage = `url(${stamp})`;
+                s1.classList.remove('hidden');
+                
+                document.getElementById('applyStampButton').classList.add('hidden');
+                document.getElementById('removeStampButton').classList.remove('hidden');
+                window.updatePreview();
+            };
+
+            document.getElementById('removeStampButton').onclick = () => {
+                document.getElementById('stampOverlay1').classList.add('hidden');
+                document.getElementById('applyStampButton').classList.remove('hidden');
+                document.getElementById('removeStampButton').classList.add('hidden');
+                window.updatePreview();
+            };
+
+            ['tanggalKunjungan', 'waktuKunjungan', 'hasilKunjungan', 'penerimaKunjungan', 'namaKepalaSekolah', 'nipKepalaSekolah', 'asalSekolah'].forEach(id => {
+                document.getElementById(id).addEventListener('input', window.updatePreview);
+            });
+
+            window.renderPetugasInput();
+            window.updatePreview();
+        });
+    </script>
+</body>
+</html>
