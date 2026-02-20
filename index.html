@@ -219,18 +219,18 @@
 </div>
             </div>
 
-            <form id="visum-form">
+<form id="visum-form">
                 <div class="form-grid">
                     <div class="space-y-4">
                         <div>
+                            <div class="mb-2 text-left">
+                                <a href="https://galih-ai.github.io/e-KopSu/" target="_blank" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 hover:underline">
+                                   KLIK DISINI UNTUK MEMBUAT KOP SEKOLAH ANDA
+                                </a>
+                            </div>
+
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Upload Kop Surat (Spesifikasi gambar ukuran 2000 x 400 pixel, ukuran file 356.7 KB, 71 dpi, 24 bit)</label>
                             <input type="file" id="kopSuratFile" accept="image/*" onchange="previewKop(this)" class="block w-full text-xs border border-slate-200 p-2 rounded-lg bg-slate-50">
-                        
-                        <div class="mt-1 text-left">
-    <a href="https://galih-ai.github.io/e-KopSu/" target="_blank" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 hover:underline">
-        <i class="ph-bold ph-arrow-square-out"></i> BUAT KOP SURAT
-    </a>
-</div>
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Tanggal & Waktu</label>
@@ -277,7 +277,7 @@
                                 <input type="file" id="fotoDokumentasi" accept="image/*" multiple class="text-[10px] w-full border border-slate-200 p-2 rounded-lg bg-white">
                                 <p class="text-[9px] text-slate-400 mt-1">*Maksimal 4 foto</p>
                             </div>
-                            <div class="flex gap-2">
+                        <div class="flex gap-2">
                                 <button type="button" id="applyStampButton" class="flex-grow bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg text-xs font-bold shadow-sm flex items-center justify-center gap-2 transition-colors">
                                     <i class="ph ph-seal-check"></i> BUBUHKAN STEMPEL
                                 </button>
@@ -285,6 +285,10 @@
                                     <i class="ph ph-trash"></i> HAPUS
                                 </button>
                             </div>
+                            
+<p class="text-[10px] text-slate-500 mt-2 italic text-center leading-tight font-bold">
+    TOMBOL BUBUHKAN STEMPEL TIDAK HARUS DIGUNAKAN, APABILA SATPEN BAPAK/IBU MENGHARUSKAN STEMPEL YANG DIGUNAKAN PADA VISUM ADALAH STEMPEL BASAH
+</p>
                         </div>
                     </div>
                 </div>
@@ -403,23 +407,10 @@ async function login() {
     const user = document.getElementById('username').value;
     const pass = document.getElementById('password').value;
     const error = document.getElementById('loginError');
-    
-    // Ambil elemen Overlay
-    const overlay = document.getElementById('loadingOverlay');
-    const loadText = document.getElementById('loadingText');
-    const loadSub = document.getElementById('loadingSubText');
-    const loadIcon = document.getElementById('loadingIcon');
+    const loginBtn = document.querySelector('button[onclick="login()"]');
 
-    // 1. TAMPILKAN EFEK LOGIN
-    // Set Teks & Ikon
-    loadText.innerText = "Menyiapkan aplikasi";
-    loadSub.innerText = "Memverifikasi akun Anda...";
-    loadIcon.innerHTML = '<i class="ph-bold ph-spinner-gap animate-spin text-indigo-600"></i>';
-    loadIcon.className = "mb-5 text-5xl flex items-center justify-center h-20 w-20 bg-indigo-50 rounded-full text-indigo-600";
-    
-    // Munculkan Overlay
-    overlay.classList.remove('hidden');
-    error.classList.add('hidden');
+    loginBtn.innerText = "Mengecek...";
+    loginBtn.disabled = true;
 
     try {
         const response = await fetch(SCRIPT_URL, {
@@ -430,72 +421,42 @@ async function login() {
         });
 
         const data = await response.json();
-        
-        if (data.result === 'success') {
-            // 2. JIKA SUKSES: Ubah ikon jadi centang hijau
-            loadText.innerText = "Berhasil Masuk!";
-            loadSub.innerText = "Selamat bekerja";
-            loadIcon.innerHTML = '<i class="ph-fill ph-check-circle"></i>';
-            loadIcon.className = "mb-5 text-5xl flex items-center justify-center h-20 w-20 bg-green-100 rounded-full text-green-600 animate-bounce";
 
-            // Tunggu 1.5 detik agar user sempat membaca pesan
-            setTimeout(() => {
-                overlay.classList.add('hidden');
-                document.getElementById('landingPage').classList.add('hidden');
-                document.getElementById('appContainer').classList.remove('hidden');
-            }, 1500);
+        if (data.result === 'success') {
+document.getElementById('landingPage').classList.add('hidden');
+    // Pastikan ID ini sama dengan ID pembungkus aplikasi Anda (appContainer atau appPage)
+    document.getElementById('appContainer').classList.remove('hidden'); 
+    error.classList.add('hidden');
         } else {
-            // 3. JIKA GAGAL: Tutup overlay, tampilkan error
-            overlay.classList.add('hidden');
             error.innerText = "Username atau password salah";
             error.classList.remove('hidden');
         }
     } catch (err) {
-        overlay.classList.add('hidden');
         error.innerText = "Terjadi kesalahan koneksi";
         error.classList.remove('hidden');
+    } finally {
+        loginBtn.innerText = "Masuk Aplikasi";
+        loginBtn.disabled = false;
     }
 }
 
 function logout() {
-    // Ambil elemen Overlay
-    const overlay = document.getElementById('loadingOverlay');
-    const loadText = document.getElementById('loadingText');
-    const loadSub = document.getElementById('loadingSubText');
-    const loadIcon = document.getElementById('loadingIcon');
+    // 1. Sembunyikan halaman aplikasi
+    document.getElementById('appContainer').classList.add('hidden');
+    
+    // 2. Munculkan kembali halaman login
+    document.getElementById('landingPage').classList.remove('hidden');
 
-    // 1. SETTING TAMPILAN LOGOUT
-    loadText.innerText = "Terima kasih";
-    loadSub.innerText = "Sampai jumpa kembali!";
-    // Ikon Hati Merah (Love)
-    loadIcon.innerHTML = '<i class="ph-fill ph-heart"></i>';
-    loadIcon.className = "mb-5 text-5xl flex items-center justify-center h-20 w-20 bg-red-50 rounded-full text-red-500 animate-pulse";
-
-    // 2. Munculkan Overlay
-    overlay.classList.remove('hidden');
-
-    // 3. Proses Logout dengan jeda 2 detik
-    setTimeout(() => {
-        // Sembunyikan aplikasi
-        document.getElementById('appContainer').classList.add('hidden');
-        
-        // Munculkan kembali landing page
-        document.getElementById('landingPage').classList.remove('hidden');
-        
-        // Bersihkan input
-        document.getElementById('username').value = '';
-        document.getElementById('password').value = '';
-        
-        // Sembunyikan error lama
-        const error = document.getElementById('loginError');
-        if (error) error.classList.add('hidden');
-        
-        // Scroll ke atas
-        window.scrollTo(0, 0);
-        
-        // Sembunyikan overlay
-        overlay.classList.add('hidden');
-    }, 2000); 
+    // 3. Kosongkan input username dan password agar aman
+    document.getElementById('username').value = '';
+    document.getElementById('password').value = '';
+    
+    // 4. Sembunyikan pesan error jika sebelumnya ada
+    const error = document.getElementById('loginError');
+    if (error) error.classList.add('hidden');
+    
+    // Opsional: Scroll ke atas agar tampilan login bersih
+    window.scrollTo(0, 0);
 }
 </script>
 
@@ -715,21 +676,5 @@ function logout() {
             window.updatePreview();
         });
     </script>
-    <div id="loadingOverlay" class="fixed inset-0 bg-black/80 z-[100] hidden flex flex-col items-center justify-center backdrop-blur-sm transition-all duration-300">
-    <div class="bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center text-center max-w-xs w-[80%] transform hover:scale-105 transition-transform duration-300">
-        
-        <div id="loadingIcon" class="mb-5 text-6xl flex items-center justify-center h-20 w-20 bg-indigo-50 rounded-full text-indigo-600">
-            <i class="ph-bold ph-spinner-gap animate-spin"></i>
-        </div>
-
-        <h3 id="loadingText" class="text-xl font-black text-gray-800 mb-2 tracking-tight">
-            Menyiapkan aplikasi...
-        </h3>
-
-        <p id="loadingSubText" class="text-xs font-medium text-slate-400">
-            Mohon tunggu sebentar
-        </p>
-    </div>
-</div>
 </body>
 </html>
